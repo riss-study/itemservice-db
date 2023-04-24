@@ -20,6 +20,28 @@ import java.util.Optional;
 
 /**
  * JdbcTemplate
+ *
+ * 샘플 예제
+ * 단건 조회 - 숫자 조회
+ * int rowCount=jdbcTemplate.queryForObject("select count(*) from item", Integer.class);
+ *
+ * 단건 조회 - 숫자 조회, 파라미터 바인딩
+ * int countOfItemNameRiss=jdbcTemplate.queryForObject("select count(*) from item where item_name=?", Integer.class, "riss");
+ *
+ * 단건 조회 - 문자 조회
+ * String name=jdbcTemplate.queryForObject("select item_name from item where id=?", String.class, 12L);
+ * 
+ * 단건 조회 - 객체 조회 (itemRowMapper() 는 사전에 구현한 RowMapper method)
+ * Item item=jdbcTemplate.queryForObject("select id, item_name, price, quantity from item where id=?", itemRowMapper(), 12L);
+ *
+ * 목록 조회 - 객체 조회
+ * List<Item> item=jdbcTemplate.query("select id, item_name, price, quantity from item", itemRowMapper());
+ *
+ * EXECUTE (테이블 생성 DDL 등)
+ * jdbcTemplate.execute("create table my_table (id integer, name varchar(1000)");
+ *
+ * 스토어드 프로시저 호출
+ * jdbcTemplate.update("call SUPPORT.REFRESH_ACTORS_SUMMARY(?)", Long.valueOf(unionId));
  */
 @Slf4j
 public class JdbcTemplateItemRepositoryV1 implements ItemRepository {

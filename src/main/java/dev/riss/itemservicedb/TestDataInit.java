@@ -21,8 +21,8 @@ public class TestDataInit {
     // @EventListener 가 스프링 관련된 이벤트이므로 얘도 스프링빈에 등록돼있어야 함
     public void initData() {
         log.info("test data init");
-        itemRepository.save(new Item("itemA", 10000, 10));
-        itemRepository.save(new Item("itemB", 20000, 20));
+/*        itemRepository.save(new Item("itemA", 10000, 10));
+        itemRepository.save(new Item("itemB", 20000, 20));*/
     }
 
 }
