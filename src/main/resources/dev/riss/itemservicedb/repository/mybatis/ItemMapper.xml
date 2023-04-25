@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.riss.itemservicedb.repository.mybatis.ItemMapper"> <!-- namespace:pakage+mapperclass -->
+
+    <!--
+    ==== MyBatis 기본 ====
+        id: 매퍼 인터페이스에 설정한 메서드 이름 지정 ex. save() -> save
+        #{}: 파라미터 바인딩. 매퍼에서 넘긴 객체의 프로퍼티 이름 적어주면 됨. PreparedStatement 를 사용함. JDBC 의 SQL '?' 부분이랑 같은 개념
+        useGeneratedKeys: 테이터베이스가 키를 생성하주는 IDENTITY 전략일 때 사용.
+        keyProperty: 생성되는 키의 속성 이름 지정. save() 에서는 insert 끝나고 item 의 id 라는 이름의 속성에 생성된 값이 입력된다.
+        resultType: 반환타입 명시. 여기서는 dev.riss.itemservicedb.domain.Item 이지만
+                    properties 에서 ~~domain 까지 패키지 지정해줬기 때문에 생략 가능
+                    JdbcTemplate 의 BeanPropertyRowMapper 처럼 select sql 의 결과를 명시된 클래스 객체로 바로 변환해줌
+                    proerties 에서 mybatis.configuration.map-underscore-to-camel-case=true 를 해줬기 때문에 snake->camel case 자동 변환해줌
+                    ex. item_name -> itemName
+        자바 코드에서 반환 객체가 하나면 Item, Optional<Item> 처럼 사용, 하나 이상이면 컬렉션 사용. 주로 List<> 사용
+
+        ** XML 에서는 tag 시작, 종료에 '<', '>' 를 사용하므로 그런 특수 문자는 HTML 특수 코드 사용
+                '<': &lt;     '>': %gt;     '&': &amp;
+                아니면 xml 에서 지원하는 CDATA 구문 문법 사용 가능. 대신 이 안에서는 xml tag 가 단순 문자로 인식되기 때문에
+                <if>, <where> 등이 적용되지 않는다.
+                ex. <![CDATA[and price <= #{maxPrice}]]>
+
+    ==== 동적 쿼리 ====
+        <where>, <if> 같은 문법을 통해 편리하게 동적 쿼리를 지원
+        <if>: 해당 조건(test) 만족 시 구문 추가
+        <where>: 적절하게 where 문장 생성.
+                    <if> 가 모두 실패하게 되면 sql where 를 만들지 않음
+                    <if> 가 하나라도 성공하면 처음 나타나는 AND 를 WHERE 로 변환해줌 (처음 if 성공하면 해당 구문의 AND -> WHERE 로 치환)
+
+        ** choose-when-otherwise: 자바의 switch 구문과 유사
+        <choose>
+          <when test="OGNL 문법 조건문1"> AND ~~~ </when>
+          <when test="OGNL 문법 조건문2"> AND ~~~ </when>
+          <otherwise> AND ~~ </otherwise>
+        </chose>
+
+        ** trim, where, set
+        where: <where> 안에 문장이 없으면 where 추가x, 문장이 있어야 where 추가함. AND 가 먼저 시작되면 AND 를 지움
+
+        trim: 스트링 대체 문법, <where> 와 같은 기능 수행 가능 (아래는 문장 맨 앞에 AND 나 OR 가 있으면 prefix 로 지정한 WHERE 로 대체)
+        <trim prefix="WHERE" prefixOverrides="AND |OR"> ~~~ </trim>
+
+        foreach: 컬렉션 반복 처리할 때 사용. WHERE IN (1,2,3,4,5,6) 이럴 때 사용 (파라미터로 리스트를 넘길 때 사용)
+        <where>
+            <foreach item="item" index="index" collection="list"
+                open="ID in (" separator="," close=")" nullable="true>
+                    #{item}
+            </foreach>
+        </where>
+
+    ==== 기타 기능 ====
+        - 애노테이션으로 SQL 작성: xml 대신에 애노테이션에 SQL 작성 가능 (Mapper class 안에, 첫 회사 프로젝트에서 xml 안쓰고 이렇게 썼던 기억)
+            @Select("select id, item_name, price, quantity from item where id=#{id}")
+            Optional<Item> findById(Long id);
+            => 근데 간단한거 아닌 이상 이렇게 잘 안씀. xml 로 편리하게 하기 위해 Mybatis 사용하므로, 그리고 동적 쿼리 해결이 안됨
+
+        - 문자열 대체(String Substitution)
+            #{} 는 ?를 넣고 파라미터를 데이터 바인딩하는 PreparedStatement 를 사용함
+            만약 파라미터 바인딩이 아닌 문자 그대로를 처리하고 싶은 경우에는 ${} 사용하면 됨
+            @Select("select * from user where ${column} = #{value}")
+            User findByColumn (@Param("column") String column, @Param("value") String value);
+            => 이렇게 데이터가 아닌 컬럼명을 직접 넣고 싶은 경우 사용 가능
+            => but, ${} 는 SQL 인젝션 공격이 가능하므로 비추천. 매우 주의깊게 사용
+
+        - 재사용 가능한 SQL 조각: xml 안에 반복 코드가 있는 경우 <sql> 태그로 정의해놓고 <include> 를 이용해서 해당 조각을 포함시킬 수 있음
+            <sql id="userColumn"> ${alias}.id, ${alias}.username, ${alias}.password </sql>
+            ...
+            <select id="selectUsers" resultType="map">
+                select
+                    <include refid="userColumns"><property name="alias" value="t1"></include>,
+                    <include refid="userColumns"><property name="alias" value="t2"></include>
+                from some_table1 t1
+                    cross join some_table2 t2
+            </select>
+            => 그리고 <property> 를 이용해서 프로퍼티 값을 전달해서 인클루드해서, 내부에서 재사용 가능 (<sql> 에서 ${alias} 사용)
+              (마치 파라미터 넘기듯이 인클루드 가능)
+
+        - 보통 결과 매핑할 때 컬럼명, 객체 프로퍼티 명이 다른 경우 별칭('as') 을 사용
+            ResultMap 을 선언하여 사용하면 사용안해도 됨
+            <resultMap id="userResultMap" type="User">
+                <id property="id" column="user_id" />
+                <result property="username" column="username" />
+                <result property="password" column="password" />
+            </resultMap>
+            <select id="selectUsers" resultMap="userResultMap">
+                select user_id, user_name, hashed_password from some_table where id=#{id}
+            </select>
+        - 복잡한 결과매핑: MyBatis 도 여러 테이블 조인하고 특정 테이블을 참조해서 select 하는 등의
+                        (ex. member, team 조인해서 하나의 오브젝트로 반환)
+                        객체 연관관계를 고려해서 데이터 조회하는 게 가능. <association>, <collection> 등을 사용하면 됨.
+                        하지만 ORM 개념으로 매핑하는 JPA 같은 것보다 공수도 많고 성능 최적화가 여러움.
+    -->
+    <insert id="save" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO item (item_name, price, quantity)
+        VALUES (#{itemName}, #{price}, #{quantity})
+    </insert>
+
+    <update id="update">
+        UPDATE item
+        SET item_name=#{updateParam.itemName}, price=#{updateParam.price}, quantity=#{updateParam.quantity}
+        WHERE id=#{id}
+    </update>
+
+    <select id="findById" resultType="Item">
+        SELECT id, item_name, price, quantity
+        FROM item
+        WHERE id=#{id}
+    </select>
+
+    <select id="findAll" resultType="Item">
+        SELECT id, item_name, price, quantity
+        FROM item
+        <where>
+            <if test="itemName != null and itemName != ''">        <!-- if test 문법에 AND 대문자로 하면 안되네... and 무조건 소문자로 -->
+                AND item_name LIKE concat('%', #{itemName}, '%')
+            </if>
+            <if test="maxPrice != null">
+                AND price &lt;= #{maxPrice}     <!-- <는 xml 문법오류때문에 $lt; 로 치환 -->
+            </if>
+        </where>
+    </select>
+
+</mapper>
