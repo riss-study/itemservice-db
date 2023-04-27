@@ -4,10 +4,8 @@ import dev.riss.itemservicedb.domain.Item;
 import dev.riss.itemservicedb.repository.ItemRepository;
 import dev.riss.itemservicedb.repository.ItemSearchCond;
 import dev.riss.itemservicedb.repository.ItemUpdateDto;
-import dev.riss.itemservicedb.repository.mybatis.ItemMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,13 +45,13 @@ import java.util.Optional;
 @Slf4j
 @Repository
 @Transactional(readOnly = true)
-public class JpaItemRepository implements ItemRepository {
+public class JpaItemRepositoryV1 implements ItemRepository {
 
     // dataSource 넣어주고 EntityManagerFactory 에서 EntityManager 꺼내서 써야하는데 (JpaTransactionManager 설정 등 많은 설정을 해야 함)
     // 스프링부트랑 통합하면 자동으로 해줌 (JpaBaseConfiguration 클래스 참조)
     private final EntityManager em;
 
-    public JpaItemRepository(EntityManager em) {
+    public JpaItemRepositoryV1(EntityManager em) {
         this.em = em;
     }
 
