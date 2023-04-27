@@ -16,7 +16,8 @@ import javax.sql.DataSource;
 //@Import(JdbcTemplateV1Config.class)		// 해당 Config 를 설정 파일로 사용한다는 애노테이션 (여기선 DB 기술교체마다 이걸로 바꿔쓸거임)
 //@Import(JdbcTemplateV2Config.class)
 //@Import(JdbcTemplateV3Config.class)
-@Import(MyBatisConfig.class)
+//@Import(MyBatisConfig.class)
+@Import(JpaConfig.class)
 @SpringBootApplication(scanBasePackages = "dev.riss.itemservicedb.web")		// web 패키지 하위만 컴포넌트스캔하겠다는 의미
 // 그럼 나머지는 직접 수동으로 빈 등록할 예정
 @Slf4j
