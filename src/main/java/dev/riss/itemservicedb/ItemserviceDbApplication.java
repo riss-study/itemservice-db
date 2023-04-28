@@ -18,7 +18,8 @@ import javax.sql.DataSource;
 //@Import(JdbcTemplateV3Config.class)
 //@Import(MyBatisConfig.class)
 //@Import(JpaConfig.class)
-@Import(SpringDataJpaConfig.class)
+//@Import(SpringDataJpaConfig.class)
+@Import(QuerydslConfig.class)
 @SpringBootApplication(scanBasePackages = "dev.riss.itemservicedb.web")		// web 패키지 하위만 컴포넌트스캔하겠다는 의미
 // 그럼 나머지는 직접 수동으로 빈 등록할 예정
 @Slf4j
